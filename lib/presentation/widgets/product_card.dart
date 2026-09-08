@@ -7,13 +7,15 @@ class ProductCard extends StatefulWidget {
     super.key,
     required this.name,
     required this.price,
-    required this.placeholderColor,
+    required this.imageUrl,
+    this.placeholderColor = const Color(0xFFE2E8F0),
     this.onAddToCart,
     this.onQuantityChanged,
   });
 
   final String name;
   final double price;
+  final String imageUrl;
   final Color placeholderColor;
   final VoidCallback? onAddToCart;
   final ValueChanged<int>? onQuantityChanged;
@@ -36,6 +38,34 @@ class _ProductCardState extends State<ProductCard> {
     widget.onQuantityChanged?.call(value);
   }
 
+  Widget _imageFallback({double iconSize = 36}) {
+    return Container(
+      color: widget.placeholderColor.withValues(alpha: 0.16),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.shopping_bag_outlined,
+        size: iconSize,
+        color: widget.placeholderColor,
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    if (widget.imageUrl.isEmpty) {
+      return _imageFallback();
+    }
+    return Image.network(
+      widget.imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return _imageFallback(iconSize: 28);
+      },
+      errorBuilder: (context, error, stackTrace) => _imageFallback(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -49,18 +79,7 @@ class _ProductCardState extends State<ProductCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: ColoredBox(
-              color: widget.placeholderColor.withValues(alpha: 0.16),
-              child: Center(
-                child: Icon(
-                  Icons.shopping_bag_outlined,
-                  size: 36,
-                  color: widget.placeholderColor,
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: _buildImage()),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(

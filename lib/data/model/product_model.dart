@@ -23,4 +23,13 @@
 
     @HiveField(3)
     String imageUrl;
+
+     factory ProductModel.fromJson(Map<String, dynamic> json) {
+    return ProductModel(
+      productId: json['id'] as int? ?? 0,
+      productName: json['title'] as String? ?? '',
+      price: (json['price'] as num).toDouble(),
+      imageUrl: json['thumbnail'] as String? ?? '',
+    );
+  }
   }

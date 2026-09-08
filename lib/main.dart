@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'data/local/hive_service.dart';
+import 'data/repositories/product_repository.dart';
+import 'presentation/bloc/bloc/products_bloc.dart';
 import 'presentation/screens/product_screen.dart';
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-   
-  Hive.initFlutter();
+
+  await HiveService.init();
 
   runApp(const OrderPlacementApp());
 }
@@ -34,7 +37,14 @@ class OrderPlacementApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const ProductScreen(),
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<ProductsBloc>(
+            create: (_) => ProductsBloc(ProductRepository()),
+          ),
+        ],
+        child: const ProductScreen(),
+      ),
     );
   }
 }
