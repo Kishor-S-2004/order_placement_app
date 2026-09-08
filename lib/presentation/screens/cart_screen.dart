@@ -27,7 +27,10 @@ class _CartScreenState extends State<CartScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cart'),
+        title: const Text('Cart',style: TextStyle(
+          fontWeight: FontWeight.w700,
+
+        ),),
       ),
 
       body: BlocBuilder<CartBloc, CartState>(

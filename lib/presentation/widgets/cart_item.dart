@@ -41,7 +41,19 @@ class CartItemWidget extends StatelessWidget {
               width: 72,
               height: 72,
               color: placeholderColor.withValues(alpha: 0.18),
-              child: Image.network(imageUrl),
+              child: Image.network(
+                imageUrl,
+                width: 72,
+                height: 72,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 28,
+                    color: placeholderColor,
+                  );
+                },
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -86,7 +98,7 @@ class CartItemWidget extends StatelessWidget {
                     // ),
                   ],
                 ),
-                SizedBox(height: 10,),
+                SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: Text(
