@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:order_placement_app/presentation/bloc/bloc/cart_bloc.dart';
 
 import '../widgets/cart_item.dart';
 
@@ -10,15 +13,11 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  static const _cartProducts = <({String name, double unitPrice, Color color})>[
-    (name: 'Product Name', unitPrice: 29.99, color: Color(0xFF14B8A6)),
-    (name: 'Product Two', unitPrice: 29.99, color: Color(0xFFF97316)),
-  ];
+  @override
+  void initState() {
+    super.initState();
 
-  final List<int> _quantities = [3, 2];
-
-  void _updateQuantity(int index, int quantity) {
-    setState(() => _quantities[index] = quantity);
+    context.read<CartBloc>().add(FetchCartItems());
   }
 
   @override
@@ -26,29 +25,72 @@ class _CartScreenState extends State<CartScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final totalUnits = _quantities.fold<int>(0, (sum, qty) => sum + qty);
-    var grandTotal = 0.0;
-    for (var i = 0; i < _cartProducts.length; i++) {
-      grandTotal += _cartProducts[i].unitPrice * _quantities[i];
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Cart')),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _cartProducts.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final product = _cartProducts[index];
-          return CartItemWidget(
-            name: product.name,
-            unitPrice: product.unitPrice,
-            quantity: _quantities[index],
-            placeholderColor: product.color,
-            onQuantityChanged: (quantity) => _updateQuantity(index, quantity),
-          );
+      appBar: AppBar(
+        title: const Text('Cart'),
+      ),
+
+      body: BlocBuilder<CartBloc, CartState>(
+        builder: (context, state) {
+          if (state is CartLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (state is CartSuccess) {
+            final cartItems = state.cartItems;
+
+            if (cartItems.isEmpty) {
+              return const Center(
+                child: Text('Your cart is empty'),
+              );
+            }
+
+            final totalUnits = cartItems.fold<int>(
+              0,
+              (sum, item) => sum + item.quantity,
+            );
+
+            final grandTotal = cartItems.fold<double>(
+              0,
+              (sum, item) => sum + (item.price * item.quantity),
+            );
+
+            return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: cartItems.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = cartItems[index];
+
+                return CartItemWidget( placeholderColor: colorScheme.primary,
+                  name: item.productName,
+                  unitPrice: item.price,
+                  quantity: item.quantity,
+                  onQuantityChanged: (quantity) {
+                    context.read<CartBloc>().add(
+                      UpdateCartQuantity(
+                        productId: item.productId,
+                        quantity: quantity,
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          }
+
+          if (state is CartError) {
+            return Center(
+              child: Text(state.errorMessage),
+            );
+          }
+
+          return const SizedBox();
         },
       ),
+
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
@@ -56,7 +98,9 @@ class _CartScreenState extends State<CartScreen> {
           decoration: BoxDecoration(
             color: colorScheme.surface,
             border: Border(
-              top: BorderSide(color: colorScheme.outlineVariant),
+              top: BorderSide(
+                color: colorScheme.outlineVariant,
+              ),
             ),
             boxShadow: [
               BoxShadow(
@@ -66,52 +110,86 @@ class _CartScreenState extends State<CartScreen> {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+          child: BlocBuilder<CartBloc, CartState>(
+            builder: (context, state) {
+              if (state is! CartSuccess) {
+                return const SizedBox();
+              }
+
+              final cartItems = state.cartItems;
+
+              final totalUnits = cartItems.fold<int>(
+                0,
+                (sum, item) => sum + item.quantity,
+              );
+
+              final grandTotal = cartItems.fold<double>(
+                0,
+                (sum, item) => sum + (item.price * item.quantity),
+              );
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Items', style: theme.textTheme.bodyMedium),
-                  Text(
-                    '${_cartProducts.length}',
-                    style: theme.textTheme.bodyMedium,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Items',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      Text(
+                        '${cartItems.length}',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Units',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      Text(
+                        '$totalUnits',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  const Divider(height: 1),
+
+                  const SizedBox(height: 12),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Grand Total',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '\$${grandTotal.toStringAsFixed(2)}',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Total Units', style: theme.textTheme.bodyMedium),
-                  Text(
-                    '$totalUnits',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Grand Total',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  Text(
-                    '\$${grandTotal.toStringAsFixed(2)}',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

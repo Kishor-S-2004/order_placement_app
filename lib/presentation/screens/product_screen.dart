@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:order_placement_app/data/model/product_model.dart';
 import 'package:order_placement_app/presentation/bloc/bloc/products_bloc.dart';
+import 'package:order_placement_app/presentation/bloc/bloc/cart_bloc.dart';
 
 import '../widgets/cart_badge.dart';
 import '../widgets/product_card.dart';
@@ -48,19 +49,28 @@ class _ProductScreenState extends State<ProductScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 4),
-            child: CartBadge(count: 2, onPressed: _openCart),
+            child: BlocBuilder<CartBloc, CartState>(
+              builder: (context, state) {
+                final count = state is CartSuccess ? state.cartItems.length : 0;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: CartBadge(count: count, onPressed: _openCart),
+                );
+              },
+            ),
           ),
         ],
       ),
       body: BlocBuilder<ProductsBloc, ProductsState>(
         builder: (context, state) {
           return switch (state) {
-            ProductsInitial() || ProductsLoading() =>
-              const Center(child: CircularProgressIndicator()),
-            ProductsError(:final errorMessage) =>
-              _buildErrorView(errorMessage),
-            ProductSuccess(:final productDetails) =>
-              _buildProductGrid(productDetails),
+            ProductsInitial() || ProductsLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            ProductsError(:final errorMessage) => _buildErrorView(errorMessage),
+            ProductSuccess(:final productDetails) => _buildProductGrid(
+              productDetails,
+            ),
           };
         },
       ),
@@ -82,13 +92,45 @@ class _ProductScreenState extends State<ProductScreen> {
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        return ProductCard(
-          name: product.productName,
-          price: product.price,
-          imageUrl: product.imageUrl,
-          placeholderColor:
-              _placeholderPalette[product.productId % _placeholderPalette.length],
+        return BlocBuilder<CartBloc, CartState>(
+  builder: (context, cartState) {
+    int quantity = 0;
+
+    if (cartState is CartSuccess) {
+      final matchingItems = cartState.cartItems.where(
+        (item) => item.productId == product.productId,
+      );
+
+      if (matchingItems.isNotEmpty) {
+        quantity = matchingItems.first.quantity;
+      }
+    }
+
+    return ProductCard(
+      name: product.productName,
+      price: product.price,
+      imageUrl: product.imageUrl,
+      placeholderColor:
+          _placeholderPalette[
+            product.productId % _placeholderPalette.length
+          ],
+      quantity: quantity,
+      onAddToCart: () {
+        context.read<CartBloc>().add(
+          AddToCart(product),
         );
+      },
+      onQuantityChanged: (value) {
+        context.read<CartBloc>().add(
+          UpdateCartQuantity(
+            productId: product.productId,
+            quantity: value,
+          ),
+        );
+      },
+    );
+  },
+);
       },
     );
   }
@@ -109,8 +151,9 @@ class _ProductScreenState extends State<ProductScreen> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
