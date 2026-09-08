@@ -5,6 +5,7 @@ import 'quantity_controller.dart';
 class CartItemWidget extends StatelessWidget {
   const CartItemWidget({
     super.key,
+    required this.imageUrl,
     required this.name,
     required this.unitPrice,
     required this.quantity,
@@ -12,6 +13,7 @@ class CartItemWidget extends StatelessWidget {
     this.onQuantityChanged,
   });
 
+  final String imageUrl;
   final String name;
   final double unitPrice;
   final int quantity;
@@ -39,11 +41,7 @@ class CartItemWidget extends StatelessWidget {
               width: 72,
               height: 72,
               color: placeholderColor.withValues(alpha: 0.18),
-              child: Icon(
-                Icons.shopping_bag_outlined,
-                size: 28,
-                color: placeholderColor,
-              ),
+              child: Image.network(imageUrl),
             ),
           ),
           const SizedBox(width: 12),
@@ -55,14 +53,16 @@ class CartItemWidget extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '\$${unitPrice.toStringAsFixed(2)} each',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -71,22 +71,33 @@ class CartItemWidget extends StatelessWidget {
                       initialValue: quantity,
                       onChanged: onQuantityChanged,
                     ),
-                    const Spacer(),
-                    Flexible(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'Subtotal: \$${subtotal.toStringAsFixed(2)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(width: 12),
+                    // Expanded(
+                    //   child: Text(
+                    //     'Subtotal: \$${subtotal.toStringAsFixed(2)}',
+                    //     textAlign: TextAlign.end,
+                    //     maxLines: 1,
+                    //     overflow: TextOverflow.ellipsis,
+                    //     style: theme.textTheme.titleSmall?.copyWith(
+                    //       color: colorScheme.primary,
+                    //       fontWeight: FontWeight.w700,
+                    //     ),
+                    //   ),
+                    // ),
                   ],
+                ),
+                SizedBox(height: 10,),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text(
+                    'Subtotal: \$${subtotal.toStringAsFixed(2)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),

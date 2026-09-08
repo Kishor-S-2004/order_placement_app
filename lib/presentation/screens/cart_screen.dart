@@ -47,16 +47,6 @@ class _CartScreenState extends State<CartScreen> {
               );
             }
 
-            final totalUnits = cartItems.fold<int>(
-              0,
-              (sum, item) => sum + item.quantity,
-            );
-
-            final grandTotal = cartItems.fold<double>(
-              0,
-              (sum, item) => sum + (item.price * item.quantity),
-            );
-
             return ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: cartItems.length,
@@ -65,6 +55,7 @@ class _CartScreenState extends State<CartScreen> {
                 final item = cartItems[index];
 
                 return CartItemWidget( placeholderColor: colorScheme.primary,
+                imageUrl: item.imageUrl,
                   name: item.productName,
                   unitPrice: item.price,
                   quantity: item.quantity,
